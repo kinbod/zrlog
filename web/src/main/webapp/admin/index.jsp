@@ -3,7 +3,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="f" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <!DOCTYPE html>
-<html>
+<html lang="${lang}">
 <base href="${basePath}"/>
 <head>
     <title>${webs.title} | ${_res['admin.management']}</title>
@@ -21,12 +21,10 @@
     <link href="${basePath}assets/css/custom.colorful.css" rel="stylesheet">
     <script src="${basePath}assets/js/route.min.js"></script>
     <script src="${basePath}assets/js/jquery.min.js"></script>
-    <script src="${basePath}admin/js/dashboard.js"></script>
+    <script src="${basePath}admin/js/index.js"></script>
     <script src="${basePath}admin/js/common.js"></script>
-    <script src="${basePath}admin/js/i18n.js"></script>
     <script>
         var _res = ${res};
-        initLang('${lang}');
     </script>
 </head>
 <body class="${webs.admin_dashboard_naver}">
