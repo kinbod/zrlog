@@ -1,24 +1,26 @@
 <%@ page session="false" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<jsp:include page="include/menu.jsp"/>
 <script type="text/javascript" src="${basePath}admin/js/set_update.js"></script>
-<script type="text/javascript" src="${basePath}admin/js/upgrade.js"></script>
 <script src="${basePath}assets/js/select2/select2.min.js"></script>
 <script src="${basePath}assets/js/switchery.min.js"></script>
+<script src="${basePath}admin/js/upgrade.js"></script>
 <div class="page-header">
     <h3>
         ${_res['admin.upgrade.manage']}
     </h3>
-    <div class="text-right">
-        <button id="checkUpgrade" type="button" class="btn btn-blank">
-            <i class="fa fa-refresh bigger-110"></i> ${_res.checkUpgrade}
-        </button>
+</div>
+<div class="row" style="margin-bottom: 15px">
+    <div class="col-md-12">
+        <div class="text-right">
+            <button id="checkUpgrade" type="button" class="btn btn-blank">
+                <i class="fa fa-refresh bigger-110"></i> ${_res.checkUpgrade}
+            </button>
+        </div>
     </div>
 </div>
 <div class="row">
-    <div class="col-md-6">
-        <form role="form" action="api/admin/upgrade/setting" class="form-horizontal" id="upgradeAjax"
-              checkBox="upgradePreview">
+    <div class="col-md-6 col-xs-12 col-sm-12">
+        <form role="form" action="api/admin/upgrade/setting" class="form-horizontal" id="upgradeAjax">
             <div class="form-group">
                 <label class="col-md-3 control-label no-padding-right"> ${_res['admin.upgrade.autoCheckCycle']} </label>
 
@@ -52,7 +54,8 @@
                 <div class="col-md-4">
 			<span class="col-sm-12">
             <label>
-                <input type="checkbox" class="form-control js-switch" style="display: none;" data-switchery="upgradePreview"
+                <input type="checkbox" class="form-control js-switch" style="display: none;"
+                       data-switchery="upgradePreview"
                        name="upgradePreview"
                        <c:if test="${webs.upgradePreview == 1}">checked="checked"</c:if>>
             </label>
@@ -64,7 +67,7 @@
             <div class="form-group">
                 <div class="col-md-offset-3 col-md-9">
                     <button id="upgrade" type="button" class="btn btn-info">
-                        <i class="fa fa-check bigger-110"></i> ${_res.submit}
+                         ${_res.submit}
                     </button>
                 </div>
             </div>
@@ -72,5 +75,4 @@
         </form>
     </div>
 </div>
-
-<jsp:include page="include/footer.jsp"/>
+${pageEndTag}

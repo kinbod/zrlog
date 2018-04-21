@@ -1,6 +1,5 @@
 <%@ page session="false" pageEncoding="UTF-8" %>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<jsp:include page="include/menu.jsp"/>
 <script type="text/javascript" src="${basePath}admin/js/set_update.js"></script>
 <script type="text/javascript" src="${basePath}assets/js/select2/select2.min.js"></script>
 <div class="page-header">
@@ -31,8 +30,8 @@
     </ul>
     <div class="row">
         <div class="tab-content">
-            <div class="tab-pane in active col-md-6" id="basic">
-                <h4 class="header blue">认真输入，有助于网站被收录</h4>
+            <div class="tab-pane in active col-md-6 col-xs-12 col-sm-12" id="basic">
+                <h4 class="header">认真输入，有助于网站被收录</h4>
                 <form role="form" class="form-horizontal" id="baseMsgAjax">
                     <div class="form-group">
                         <label class="col-md-3 control-label no-padding-right"> 网站标题 </label>
@@ -74,7 +73,7 @@
                     <div class="form-group">
                         <div class="col-md-offset-3 col-md-9">
                             <button id="baseMsg" type="button" class="btn btn-info">
-                                <i class="fa fa-check bigger-110"></i> ${_res['submit']}
+                                ${_res['submit']}
                             </button>
                         </div>
                     </div>
@@ -82,9 +81,8 @@
                 </form>
             </div>
             <div class="tab-pane col-md-6" id="other">
-                <h4 class="header blue">ICP，网站统计等信息</h4>
-                <form role="form" class="form-horizontal" checkBox="pseudo_static_status,article_thumbnail"
-                      id="otherMsgAjax">
+                <h4 class="header">ICP，网站统计等信息</h4>
+                <form role="form" class="form-horizontal" id="otherMsgAjax">
                     <div class="form-group">
                         <label class="col-md-3 control-label no-padding-right"> ICP备案信息 </label>
 
@@ -115,7 +113,7 @@
                     <div class="form-group">
                         <div class="col-md-offset-3 col-md-9">
                             <button id="otherMsg" type="button" class="btn btn-info">
-                                <i class="fa fa-check bigger-110"></i> ${_res['submit']}
+                                ${_res['submit']}
                             </button>
                         </div>
                     </div>
@@ -124,14 +122,12 @@
             </div>
             <div class="tab-pane" id="errorPageEdit">
                 <div class="col-md-12">
-                    <iframe src="admin/blank?include=file_editor&path=/error/&editType=错误页面"
-                            scrolling="no" style="border: 0;" width="100%" height="900px">
-                    </iframe>
+                    <jsp:include page="file_editor.jsp?path=/error/&editType=错误页面"/>
                 </div>
             </div>
             <div class="tab-pane col-md-6" id="blogTab" style="padding: 10px">
-                <h4 class="header blue">博客设置</h4>
-                <form role="form" class="form-horizontal" id="blogAjax">
+                <h4 class="header">博客设置</h4>
+                <form role="form" class="form-horizontal" id="blogAjax" data-toggle="validator">
                     <div class="form-group">
                         <label class="col-md-3 control-label no-padding-right">会话过期时间（分钟）</label>
 
@@ -199,7 +195,7 @@
                     <div class="form-group">
                         <div class="col-md-offset-3 col-md-9">
                             <button id="blog" type="button" class="btn btn-info">
-                                <i class="fa fa-check bigger-110"></i> ${_res['submit']}
+                                ${_res['submit']}
                             </button>
                         </div>
                     </div>
@@ -208,4 +204,4 @@
         </div>
     </div>
 </div>
-<jsp:include page="include/footer.jsp"/>
+${pageEndTag}

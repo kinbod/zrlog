@@ -68,7 +68,6 @@ public class PluginHandler extends Handler {
                 }
             } finally {
                 isHandled[0] = true;
-                AdminTokenThreadLocal.remove();
             }
         } else {
             this.next.handle(target, request, response, isHandled);
@@ -120,45 +119,16 @@ public class PluginHandler extends Handler {
      * @throws InstantiationException
      */
     private boolean accessPlugin(String uri, HttpServletRequest request, HttpServletResponse response) throws IOException, InstantiationException {
-        String pluginServerHttp = Constants.pluginServer;
-        CloseableHttpResponse httpResponse;
-        CloseResponseHandle handle = new CloseResponseHandle();
-        Map<String, String[]> paramMap = request.getParameterMap();
-        //GET请求不关心request.getInputStream() 的数据
-        if ("GET".equals(request.getMethod())) {
-            httpResponse = HttpUtil.getDisableRedirectInstance().sendGetRequest(pluginServerHttp + uri, paramMap, handle, PluginHelper.genHeaderMapByRequest(request)).getT();
-        } else {
-            //如果是表单数据提交不关心请求头，反之将所有请求头都发到插件服务
-            if (request.getHeader("Content-Type").contains("application/x-www-form-urlencoded")) {
-                httpResponse = HttpUtil.getDisableRedirectInstance().sendPostRequest(pluginServerHttp + uri, paramMap, handle, PluginHelper.genHeaderMapByRequest(request)).getT();
-            } else {
-                httpResponse = HttpUtil.getDisableRedirectInstance().sendPostRequest(pluginServerHttp + uri, IOUtil.getByteByInputStream(request.getInputStream()), handle, PluginHelper.genHeaderMapByRequest(request)).getT();
-            }
-        }
-        //添加插件服务的HTTP响应头到调用者响应头里面
-        if (httpResponse != null) {
-            Map<String, String> headerMap = new HashMap<>();
-            Header[] headers = httpResponse.getAllHeaders();
-            for (Header header : headers) {
-                headerMap.put(header.getName(), header.getValue());
-            }
-            //防止多次被Transfer-Encoding
-            headerMap.remove("Transfer-Encoding");
-            if (JFinal.me().getConstants().getDevMode()) {
-                LOGGER.info(request.getRequestURI() + " --------------------------------- response");
-            }
-            for (Map.Entry<String, String> t : headerMap.entrySet()) {
-                response.addHeader(t.getKey(), t.getValue());
-                if (JFinal.me().getConstants().getDevMode()) {
-                    LOGGER.info("key " + t.getKey() + " value-> " + t.getValue());
-                }
-            }
-            response.setStatus(httpResponse.getStatusLine().getStatusCode());
-        }
+        CloseResponseHandle handle = getContext(uri, request.getMethod(), request, true);
         try {
-            //将插件服务的HTTP的body返回给调用者
             if (handle.getT() != null && handle.getT().getEntity() != null) {
-                request.getSession();
+                response.setStatus(handle.getT().getStatusLine().getStatusCode());
+                //防止多次被Transfer-Encoding
+                handle.getT().removeHeaders("Transfer-Encoding");
+                for (Header header : handle.getT().getAllHeaders()) {
+                    response.addHeader(header.getName(), header.getValue());
+                }
+                //将插件服务的HTTP的body返回给调用者
                 byte[] bytes = IOUtil.getByteByInputStream(handle.getT().getEntity().getContent());
                 response.addHeader("Content-Length", Integer.valueOf(bytes.length).toString());
                 response.getOutputStream().write(bytes);
@@ -170,5 +140,40 @@ public class PluginHandler extends Handler {
         } finally {
             handle.close();
         }
+    }
+
+    public static CloseResponseHandle getContext(String uri, String method, HttpServletRequest request, boolean disableRedirect) throws IOException, InstantiationException {
+        String pluginServerHttp = Constants.pluginServer;
+        CloseableHttpResponse httpResponse;
+        CloseResponseHandle handle = new CloseResponseHandle();
+        HttpUtil httpUtil = disableRedirect ? HttpUtil.getDisableRedirectInstance() : HttpUtil.getInstance();
+        //GET请求不关心request.getInputStream() 的数据
+        if (method.equals(request.getMethod())) {
+            httpResponse = httpUtil.sendGetRequest(pluginServerHttp + uri, request.getParameterMap(), handle, PluginHelper.genHeaderMapByRequest(request)).getT();
+        } else {
+            //如果是表单数据提交不关心请求头，反之将所有请求头都发到插件服务
+            if ("application/x-www-form-urlencoded".equals(request.getContentType())) {
+                httpResponse = httpUtil.sendPostRequest(pluginServerHttp + uri, request.getParameterMap(), handle, PluginHelper.genHeaderMapByRequest(request)).getT();
+            } else {
+                httpResponse = httpUtil.sendPostRequest(pluginServerHttp + uri, IOUtil.getByteByInputStream(request.getInputStream()), handle, PluginHelper.genHeaderMapByRequest(request)).getT();
+            }
+        }
+        //添加插件服务的HTTP响应头到调用者响应头里面
+        if (httpResponse != null) {
+            Map<String, String> headerMap = new HashMap<>();
+            Header[] headers = httpResponse.getAllHeaders();
+            for (Header header : headers) {
+                headerMap.put(header.getName(), header.getValue());
+            }
+            if (JFinal.me().getConstants().getDevMode()) {
+                LOGGER.info(uri + " --------------------------------- response");
+            }
+            for (Map.Entry<String, String> t : headerMap.entrySet()) {
+                if (JFinal.me().getConstants().getDevMode()) {
+                    LOGGER.info("key " + t.getKey() + " value-> " + t.getValue());
+                }
+            }
+        }
+        return handle;
     }
 }

@@ -1,5 +1,6 @@
 package com.zrlog.util;
 
+import com.google.gson.Gson;
 import com.hibegin.common.util.StringUtils;
 import com.zrlog.common.Constants;
 import org.slf4j.Logger;
@@ -110,6 +111,7 @@ public class I18NUtil {
         }
         i18nMap.put("_locale", locale);
         request.setAttribute("_res", i18nMap);
+        request.setAttribute("res", new Gson().toJson(i18nMap));
         threadLocal.set(i18nMap);
     }
 
@@ -122,15 +124,16 @@ public class I18NUtil {
     }
 
     public static String getCurrentLocale() {
-        String locale;
+        String locale = null;
         if (threadLocal.get() != null) {
             locale = (String) threadLocal.get().get("_locale");
         } else {
             if (Constants.webSite != null && Constants.webSite.get("language") != null) {
                 locale = (String) Constants.webSite.get("language");
-            } else {
-                locale = "zh_CN";
             }
+        }
+        if (StringUtils.isEmpty(locale)) {
+            locale = "zh_CN";
         }
         return locale;
     }

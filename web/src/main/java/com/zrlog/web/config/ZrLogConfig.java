@@ -6,6 +6,7 @@ import com.jfinal.core.JFinal;
 import com.jfinal.kit.PathKit;
 import com.jfinal.plugin.IPlugin;
 import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
+import com.jfinal.plugin.activerecord.IDataSourceProvider;
 import com.jfinal.plugin.c3p0.C3p0Plugin;
 import com.jfinal.render.ViewType;
 import com.jfinal.template.Engine;
@@ -17,8 +18,8 @@ import com.zrlog.util.ZrLogUtil;
 import com.zrlog.web.controller.blog.ApiPostController;
 import com.zrlog.web.controller.blog.InstallController;
 import com.zrlog.web.controller.blog.PostController;
+import com.zrlog.web.handler.GlobalResourceHandler;
 import com.zrlog.web.handler.PluginHandler;
-import com.zrlog.web.handler.StaticResourceHandler;
 import com.zrlog.web.interceptor.BlackListInterceptor;
 import com.zrlog.web.interceptor.InitDataInterceptor;
 import com.zrlog.web.interceptor.MyI18NInterceptor;
@@ -45,6 +46,8 @@ import java.util.Random;
 public class ZrLogConfig extends JFinalConfig {
 
     private static final Logger LOGGER = Logger.getLogger(ZrLogConfig.class);
+    private static final String DEFAULT_PREVIEW_DB_HOST = "demo.blog.zrlog.com";
+    private static String jdbcUrl;
     //存放Zrlog的一些系统参数
     private Properties systemProperties = new Properties();
     private Properties dbProperties = new Properties();
@@ -105,11 +108,11 @@ public class ZrLogConfig extends JFinalConfig {
     /**
      * 配置JFinal提供过简易版本的ORM（其实这里是叫Active+Record）。
      *
-     * @param c3p0Plugin
+     * @param dataSourceProvider
      * @return
      */
-    private ActiveRecordPlugin getActiveRecordPlugin(C3p0Plugin c3p0Plugin) {
-        ActiveRecordPlugin arp = new ActiveRecordPlugin("c3p0Plugin" + new Random().nextInt(), c3p0Plugin);
+    private ActiveRecordPlugin getActiveRecordPlugin(IDataSourceProvider dataSourceProvider) {
+        ActiveRecordPlugin arp = new ActiveRecordPlugin("c3p0Plugin" + new Random().nextInt(), dataSourceProvider);
         arp.addMapping(User.TABLE_NAME, "userId", User.class);
         arp.addMapping(Log.TABLE_NAME, "logId", Log.class);
         arp.addMapping(Type.TABLE_NAME, "typeId", Type.class);
@@ -134,9 +137,9 @@ public class ZrLogConfig extends JFinalConfig {
         con.setEncoding("utf-8");
         con.setI18nDefaultBaseName(com.zrlog.common.Constants.I18N);
         con.setI18nDefaultLocale("zh_CN");
-        con.setError404View("/error/404.html");
-        con.setError500View("/error/500.html");
-        con.setError403View("/error/403.html");
+        con.setError404View(com.zrlog.common.Constants.NOT_FOUND_PAGE);
+        con.setError500View(com.zrlog.common.Constants.ERROR_PAGE);
+        con.setError403View(com.zrlog.common.Constants.FORBIDDEN_PAGE);
         con.setBaseUploadPath(PathKit.getWebRootPath() + com.zrlog.common.Constants.ATTACHED_FOLDER);
         //最大的提交的body的大小
         con.setMaxPostSize(1024 * 1024 * 1024);
@@ -149,7 +152,7 @@ public class ZrLogConfig extends JFinalConfig {
      */
     public void configHandler(Handlers handlers) {
         handlers.add(new PluginHandler());
-        handlers.add(new StaticResourceHandler());
+        handlers.add(new GlobalResourceHandler());
     }
 
     /**
@@ -176,13 +179,14 @@ public class ZrLogConfig extends JFinalConfig {
                 dbProperties.load(in);
                 tryDoUpgrade(getUpgradeSqlBasePath(), dbProperties.getProperty("jdbcUrl"), dbProperties.getProperty("user"),
                         dbProperties.getProperty("password"), dbProperties.getProperty("driverClass"));
+                jdbcUrl = dbProperties.getProperty("jdbcUrl");
 
                 // 启动时候进行数据库连接
-                C3p0Plugin c3p0Plugin = new C3p0Plugin(dbProperties.getProperty("jdbcUrl"),
+                C3p0Plugin dataSourcePlugin = new C3p0Plugin(dbProperties.getProperty("jdbcUrl"),
                         dbProperties.getProperty("user"), dbProperties.getProperty("password"));
-                plugins.add(c3p0Plugin);
+                plugins.add(dataSourcePlugin);
                 // 添加表与实体的映射关系
-                plugins.add(getActiveRecordPlugin(c3p0Plugin));
+                plugins.add(getActiveRecordPlugin(dataSourcePlugin));
                 Object pluginJvmArgsObj = systemProperties.get("pluginJvmArgs");
                 if (pluginJvmArgsObj == null) {
                     pluginJvmArgsObj = "";
@@ -342,5 +346,9 @@ public class ZrLogConfig extends JFinalConfig {
 
     public static boolean isTest() {
         return "junit-test".equals(systemProp.getProperty("env"));
+    }
+
+    public static boolean isPreviewDb() {
+        return jdbcUrl != null && jdbcUrl.contains(DEFAULT_PREVIEW_DB_HOST) && !ZrLogUtil.isInternalHostName(DEFAULT_PREVIEW_DB_HOST);
     }
 }

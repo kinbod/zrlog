@@ -6,6 +6,7 @@ import com.jfinal.core.JFinal;
 import com.jfinal.handler.Handler;
 import com.jfinal.kit.PathKit;
 import com.zrlog.common.Constants;
+import com.zrlog.service.AdminTokenThreadLocal;
 import com.zrlog.util.ZrLogUtil;
 import com.zrlog.web.util.WebTools;
 import org.slf4j.Logger;
@@ -22,11 +23,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 用于对静态文件的请求的检查，和静态化文章页，加快文章页的响应。
+ * 用于对静态文件的请求的检查，和静态化文章页，加快文章页的响应，压缩html文本，提供自定义插件标签的解析，静态资源文件的浏览器缓存问题
  */
-public class StaticResourceHandler extends Handler {
+public class GlobalResourceHandler extends Handler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StaticResourceHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalResourceHandler.class);
+    private static final String PAGE_END_TAG = "<none id='SP_" + System.currentTimeMillis() + "'></none>";
 
     //不希望部分技术人走后门，拦截一些不合法的请求
     private static final Set<String> FORBIDDEN_URI_EXT_SET = new HashSet<>();
@@ -41,6 +43,7 @@ public class StaticResourceHandler extends Handler {
     public void handle(String target, HttpServletRequest request, HttpServletResponse response, boolean[] isHandled) {
         String url = WebTools.getRealScheme(request) + "://" + request.getHeader("host") + request.getContextPath() + "/";
         request.setAttribute("basePath", url);
+        request.setAttribute("pageEndTag", PAGE_END_TAG);
         String ext = null;
         if (target.contains("/")) {
             String name = target.substring(target.lastIndexOf('/'));
@@ -49,11 +52,11 @@ public class StaticResourceHandler extends Handler {
             }
         }
         try {
-            final TrimPrintWriter trimPrintWriter = new TrimPrintWriter(response.getOutputStream(), !JFinal.me().getConstants().getDevMode(), url);
+            final ResponseRenderPrintWriter responseRenderPrintWriter = new ResponseRenderPrintWriter(response.getOutputStream(), !JFinal.me().getConstants().getDevMode(), url, PAGE_END_TAG, request);
             response = new HttpServletResponseWrapper(response) {
                 @Override
                 public PrintWriter getWriter() throws IOException {
-                    return trimPrintWriter;
+                    return responseRenderPrintWriter;
                 }
             };
             if (ext != null) {
@@ -70,7 +73,7 @@ public class StaticResourceHandler extends Handler {
                                 response.getOutputStream().write(IOUtil.getByteByInputStream(new FileInputStream(htmlFile)));
                             } else {
                                 this.next.handle(target, request, response, isHandled);
-                                saveResponseBodyToHtml(htmlFile, trimPrintWriter.getResponseBody());
+                                saveResponseBodyToHtml(htmlFile, responseRenderPrintWriter.getResponseBody());
                             }
                         } else {
                             this.next.handle(target, request, response, isHandled);
@@ -81,7 +84,6 @@ public class StaticResourceHandler extends Handler {
                 } else {
                     try {
                         //非法请求, 返回403
-                        request.getSession();
                         response.sendError(403);
                     } catch (IOException e) {
                         LOGGER.error("", e);
@@ -92,6 +94,8 @@ public class StaticResourceHandler extends Handler {
             }
         } catch (Exception e) {
             LOGGER.error("", e);
+        } finally {
+            AdminTokenThreadLocal.remove();
         }
     }
 

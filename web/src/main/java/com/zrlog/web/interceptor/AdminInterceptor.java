@@ -14,7 +14,6 @@ import com.zrlog.common.vo.AdminTokenVO;
 import com.zrlog.model.BaseDataInitVO;
 import com.zrlog.model.User;
 import com.zrlog.service.AdminTokenService;
-import com.zrlog.service.AdminTokenThreadLocal;
 import com.zrlog.service.CacheService;
 import com.zrlog.util.I18NUtil;
 import com.zrlog.web.annotation.RefreshCache;
@@ -50,51 +49,47 @@ class AdminInterceptor implements Interceptor {
      * @param ai
      */
     private void adminPermission(Invocation ai) {
-        try {
-            Controller controller = ai.getController();
-            AdminTokenVO adminTokenVO = adminTokenService.getAdminToken(controller.getRequest());
-            if (adminTokenVO != null) {
-                BaseDataInitVO init = (BaseDataInitVO) ai.getController().getRequest().getAttribute("init");
-                Map<String, Object> webSite = init.getWebSite();
-                if (webSite.get("admin_dashboard_naver") == null) {
-                    webSite.put("admin_dashboard_naver", "nav-md");
-                }
-                //默认开启文章封面
-                if (webSite.get("article_thumbnail_status") == null) {
-                    webSite.put("article_thumbnail_status", 1);
-                }
-                ai.getController().getRequest().setAttribute("webs", webSite);
-                try {
-                    User user = User.dao.findById(adminTokenVO.getUserId());
-                    if (StringUtils.isEmpty(user.getStr("header"))) {
-                        user.set("header", "assets/images/default-portrait.gif");
-                    }
-                    controller.setAttr("user", user);
-                    TemplateHelper.fullTemplateInfo(controller);
-                    if (!"/admin/logout".equals(ai.getActionKey())) {
-                        adminTokenService.setAdminToken(adminTokenVO.getUserId(), adminTokenVO.getSessionId(), controller.getRequest(), controller.getResponse());
-                    }
-                    ai.invoke();
-                    // 存在消息提示
-                    if (controller.getAttr("message") != null) {
-                        controller.render("/admin/message.jsp");
-                    } else {
-                        if (!tryDoRender(ai, controller)) {
-                            controller.render(Constants.ADMIN_NOT_FOUND_PAGE + ".jsp");
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("", e);
-                    exceptionHandler(ai, e);
-                }
-            } else if ("/admin/login".equals(ai.getActionKey()) || "/api/admin/login".equals(ai.getActionKey())) {
-                ai.invoke();
-                tryDoRender(ai, controller);
-            } else {
-                blockUnLoginRequestHandler(ai);
+        Controller controller = ai.getController();
+        AdminTokenVO adminTokenVO = adminTokenService.getAdminToken(controller.getRequest());
+        if (adminTokenVO != null) {
+            BaseDataInitVO init = (BaseDataInitVO) ai.getController().getRequest().getAttribute("init");
+            Map<String, Object> webSite = init.getWebSite();
+            if (webSite.get("admin_dashboard_naver") == null) {
+                webSite.put("admin_dashboard_naver", "nav-md");
             }
-        } finally {
-            AdminTokenThreadLocal.remove();
+            //默认开启文章封面
+            if (webSite.get("article_thumbnail_status") == null) {
+                webSite.put("article_thumbnail_status", 1);
+            }
+            ai.getController().getRequest().setAttribute("webs", webSite);
+            try {
+                User user = User.dao.findById(adminTokenVO.getUserId());
+                if (StringUtils.isEmpty(user.getStr("header"))) {
+                    user.set("header", "assets/images/default-portrait.gif");
+                }
+                controller.setAttr("user", user);
+                TemplateHelper.fullTemplateInfo(controller);
+                if (!"/admin/logout".equals(ai.getActionKey())) {
+                    adminTokenService.setAdminToken(adminTokenVO.getUserId(), adminTokenVO.getSessionId(), controller.getRequest(), controller.getResponse());
+                }
+                ai.invoke();
+                // 存在消息提示
+                if (controller.getAttr("message") != null) {
+                    controller.render("/admin/message.jsp");
+                } else {
+                    if (!tryDoRender(ai, controller)) {
+                        controller.redirect(Constants.NOT_FOUND_PAGE);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("", e);
+                exceptionHandler(ai, e);
+            }
+        } else if ("/admin/login".equals(ai.getActionKey()) || "/api/admin/login".equals(ai.getActionKey())) {
+            ai.invoke();
+            tryDoRender(ai, controller);
+        } else {
+            blockUnLoginRequestHandler(ai);
         }
     }
 
@@ -107,7 +102,7 @@ class AdminInterceptor implements Interceptor {
             ai.getController().renderJson(exceptionResponse);
         } else {
             if (JFinal.me().getConstants().getViewType() == ViewType.JSP) {
-                ai.getController().render(Constants.ADMIN_ERROR_PAGE + ".jsp");
+                ai.getController().redirect(Constants.ERROR_PAGE);
             }
         }
     }

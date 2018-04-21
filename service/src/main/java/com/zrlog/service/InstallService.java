@@ -55,10 +55,8 @@ public class InstallService {
         map.put("rows", 10);
         map.put("template", Constants.DEFAULT_TEMPLATE_PATH);
         map.put(Constants.AUTO_UPGRADE_VERSION_KEY, Constants.DEFAULT_AUTO_UPGRADE_VERSION_TYPE.getCycle());
-        map.put("pseudo_static_status", false);
         map.put("title", webSite.get("title"));
         map.put("second_title", webSite.get("second_title"));
-        map.put("home", webSite.get("home"));
         map.put(Constants.ZRLOG_SQL_VERSION_KEY, ZrLogUtil.getSqlVersion(basePath + "/update-sql"));
         return map;
     }
@@ -184,7 +182,7 @@ public class InstallService {
 
 
     private void insertFirstArticle(Connection connect) throws SQLException {
-        String insetLog = "INSERT INTO `log`(`logId`,`canComment`,`keywords`,`alias`,`typeId`,`userId`,`title`,`content`,`plain_content`,`mdContent`,`digest`,`releaseTime`,`last_update_date`,`rubbish`,`private`) VALUES (1,?,?,?,1,1,?,?,?,?,?,?,?,?,?)";
+        String insetLog = "INSERT INTO `log`(`logId`,`canComment`,`keywords`,`alias`,`typeId`,`userId`,`title`,`content`,`plain_content`,`markdown`,`digest`,`releaseTime`,`last_update_date`,`rubbish`,`private`) VALUES (1,?,?,?,1,1,?,?,?,?,?,?,?,?,?)";
         PreparedStatement ps = connect.prepareStatement(insetLog);
         ps.setBoolean(1, true);
         InitFirstArticleVO initFirstArticleVO = BeanUtil.convert(InstallService.class.getResourceAsStream("/init-blog.json"), InitFirstArticleVO.class);
